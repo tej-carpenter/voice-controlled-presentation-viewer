@@ -1,128 +1,278 @@
-// PDF Viewer Variables
+// Initialize PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+// Global variables
 let pdfDoc = null;
-let currentPage = 1;
+let pageNum = 1;
+let totalPages = 0;
+let canvas = document.getElementById('pdf-viewer');
+let ctx = canvas.getContext('2d');
+let scale = 1.5;
+let speechModel = null;
+let isRecognizing = false;
+let currentFile = null;
 
-// Load and render PDF using PDF.js
-function displayPDF(file) {
-    const fileReader = new FileReader();
+// DOM Elements
+const fileInput = document.getElementById('presentation-file');
+const fileName = document.getElementById('file-name');
+const startBtn = document.getElementById('start-btn');
+const backBtn = document.getElementById('back-btn');
+const prevBtn = document.getElementById('prev-slide');
+const nextBtn = document.getElementById('next-slide');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const landingContainer = document.getElementById('landing-container');
+const viewerContainer = document.getElementById('viewer-container');
+const currentSlideDisplay = document.getElementById('current-slide');
+const totalSlidesDisplay = document.getElementById('total-slides');
+const commandFeedback = document.getElementById('command-feedback');
+const voiceFeedback = document.getElementById('voice-feedback');
 
-    fileReader.onload = function () {
-        const typedArray = new Uint8Array(this.result);
+// Event Listeners
+document.addEventListener('DOMContentLoaded', initApp);
 
-        pdfjsLib.getDocument(typedArray).promise.then(function (pdf) {
-            pdfDoc = pdf;
-            currentPage = 1;
-            renderPage(currentPage);
-        });
-    };
-
-    fileReader.readAsArrayBuffer(file);
+function initApp() {
+    fileInput.addEventListener('change', handleFileSelection);
+    startBtn.addEventListener('click', startPresentation);
+    backBtn.addEventListener('click', exitPresentation);
+    prevBtn.addEventListener('click', () => {
+        if (pageNum > 1) {
+            pageNum--;
+            renderPage(pageNum);
+            showCommandFeedback("◀️ Previous Slide");
+        }
+    });
+    nextBtn.addEventListener('click', () => {
+        if (pageNum < totalPages) {
+            pageNum++;
+            renderPage(pageNum);
+            showCommandFeedback("Next Slide ▶️");
+        }
+    });
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    
+    // Load speech recognition model
+    loadSpeechModel();
 }
 
-function renderPage(num) {
-    pdfDoc.getPage(num).then(function (page) {
-        const canvas = document.getElementById('pdfViewer');
-        const context = canvas.getContext('2d');
-        const viewport = page.getViewport({ scale: 1.5 });
+function handleFileSelection(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    currentFile = file;
+    fileName.textContent = file.name;
+    startBtn.disabled = false;
+    
+    // If it's a PDF, we can load it directly
+    if (file.type === 'application/pdf') {
+        const fileReader = new FileReader();
+        fileReader.onload = function(event) {
+            const typedArray = new Uint8Array(event.target.result);
+            loadPdfDocument(typedArray);
+        };
+        fileReader.readAsArrayBuffer(file);
+    } else if (file.name.endsWith('.ppt') || file.name.endsWith('.pptx')) {
+        // For PPT/PPTX we'd need conversion, but for this demo we'll just show a message
+        fileName.textContent = file.name + " (Note: PowerPoint files need conversion to PDF for best results)";
+    }
+}
 
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        page.render({
-            canvasContext: context,
-            viewport: viewport,
-        });
-
-        updateSlideIndicator();
+function loadPdfDocument(data) {
+    pdfjsLib.getDocument({ data }).promise.then(pdf => {
+        pdfDoc = pdf;
+        totalPages = pdf.numPages;
+        totalSlidesDisplay.textContent = totalPages;
+    }).catch(error => {
+        console.error("Error loading PDF:", error);
+        alert("Error loading PDF. Please try another file.");
     });
 }
 
-function goToNextPage() {
-    if (pdfDoc && currentPage < pdfDoc.numPages) {
-        currentPage++;
-        renderPage(currentPage);
+function startPresentation() {
+    if (!currentFile) return;
+    
+    landingContainer.style.display = 'none';
+    viewerContainer.style.display = 'flex';
+    
+    // If it's not a PDF, we'd handle conversion here
+    // But for this demo, we'll just proceed with PDFs
+    if (currentFile.type !== 'application/pdf') {
+        alert("Please convert your presentation to PDF format for best results.");
+        exitPresentation();
+        return;
+    }
+    
+    pageNum = 1;
+    renderPage(pageNum);
+    
+    // Start voice recognition
+    if (speechModel) {
+        startVoiceRecognition();
     }
 }
 
-function goToPreviousPage() {
-    if (pdfDoc && currentPage > 1) {
-        currentPage--;
-        renderPage(currentPage);
+function exitPresentation() {
+    viewerContainer.style.display = 'none';
+    landingContainer.style.display = 'block';
+    
+    // Stop voice recognition
+    if (isRecognizing) {
+        stopVoiceRecognition();
     }
-}
-
-function updateSlideIndicator() {
-    const indicator = document.getElementById('slideIndicator');
-    indicator.textContent = `Slide: ${currentPage} / ${pdfDoc.numPages}`;
-}
-
-// Voice Command Recognition
-let model, recognizer;
-const modelURL = "assets/audio-model/";
-
-async function initVoiceRecognition() {
-    recognizer = await tmSound.create(modelURL + "model.json", modelURL + "metadata.json");
-    await recognizer.ensureModelLoaded();
-
-    recognizer.listen(result => {
-        const maxScore = Math.max(...result.scores);
-        const index = result.scores.indexOf(maxScore);
-        const label = recognizer.wordLabels()[index];
-
-        console.log("Heard:", label);
-        handleVoiceCommand(label);
-    }, {
-        overlapFactor: 0.5,
-        probabilityThreshold: 0.85
-    });
-}
-
-function handleVoiceCommand(command) {
-    if (command === "next") {
-        goToNextPage();
-        showCommandIndicator("Next Slide ▶️");
-    } else if (command === "previous") {
-        goToPreviousPage();
-        showCommandIndicator("Previous Slide ◀️");
-    }
-}
-
-// Visual feedback for voice commands
-function showCommandIndicator(text) {
-    const indicator = document.getElementById("commandIndicator");
-    indicator.textContent = text;
-    indicator.style.opacity = 1;
-
-    setTimeout(() => {
-        indicator.style.opacity = 0;
-    }, 1500);
-}
-
-// Fullscreen mode
-function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-    } else {
+    
+    // Exit fullscreen if needed
+    if (document.fullscreenElement) {
         document.exitFullscreen();
     }
 }
 
-// Start presentation handler
-function startPresentation() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
+function renderPage(num) {
+    if (!pdfDoc) return;
+    
+    pdfDoc.getPage(num).then(page => {
+        const viewport = page.getViewport({ scale });
+        
+        // Adjust canvas size to match PDF page
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // Render PDF page into canvas context
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        page.render(renderContext);
+        
+        // Update page info
+        currentSlideDisplay.textContent = num;
+        
+        // Apply a slight zoom animation
+        canvas.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+            canvas.style.transform = 'scale(1)';
+        }, 100);
+    });
+}
 
-    if (file) {
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-
-        if (fileExtension === 'pdf') {
-            displayPDF(file);
-        } else if (['ppt', 'pptx'].includes(fileExtension)) {
-            alert("PPT/PPTX support requires conversion to PDF before upload.");
-        } else {
-            alert('Unsupported file type');
-        }
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        viewerContainer.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+        viewerContainer.classList.add('fullscreen');
+    } else {
+        document.exitFullscreen();
+        viewerContainer.classList.remove('fullscreen');
     }
 }
 
-window.onload = initVoiceRecognition;
+function showCommandFeedback(message) {
+    commandFeedback.textContent = message;
+    commandFeedback.classList.add('show');
+    
+    // Hide after 2 seconds
+    setTimeout(() => {
+        commandFeedback.classList.remove('show');
+    }, 2000);
+}
+
+// Voice Recognition Functions
+async function loadSpeechModel() {
+    try {
+        // Use absolute path instead of relative
+        const URL = window.location.origin + '/assets/audio-model/';
+        
+        // Create recognizer using your custom model
+        const recognizer = await speechCommands.create(
+            "BROWSER_FFT",
+            undefined,
+            URL + 'model.json', 
+            URL + 'metadata.json'
+        );
+        
+        await recognizer.ensureModelLoaded();
+        speechModel = recognizer;
+        
+        console.log("Custom speech recognition model loaded");
+    } catch (error) {
+        console.error("Error loading speech recognition model:", error);
+    }
+}
+
+async function startVoiceRecognition() {
+    if (!speechModel || isRecognizing) return;
+    
+    isRecognizing = true;
+    voiceFeedback.textContent = "Listening...";
+    
+    // Listen for commands
+    speechModel.listen(result => {
+        // Get the most likely class
+        const scores = result.scores;
+        const maxScore = Math.max(...scores);
+        const maxScoreIndex = scores.indexOf(maxScore);
+        
+        // Get the class label from your model
+        const commands = speechModel.wordLabels();
+        const recognized = commands[maxScoreIndex];
+        
+        // Check confidence and execute command
+        if (maxScore > 0.75) {
+            // Use your exact class names from Teachable Machine
+            if (recognized === 'next') {
+                if (pageNum < totalPages) {
+                    pageNum++;
+                    renderPage(pageNum);
+                    showCommandFeedback("Next Slide ▶️");
+                }
+            } else if (recognized === 'previous') {
+                if (pageNum > 1) {
+                    pageNum--;
+                    renderPage(pageNum);
+                    showCommandFeedback("◀️ Previous Slide");
+                }
+            }
+            // 'background' class is implicitly ignored
+            
+            // Show feedback
+            voiceFeedback.textContent = "Recognized: " + recognized;
+            setTimeout(() => {
+                voiceFeedback.textContent = "Listening...";
+            }, 2000);
+        }
+    }, {
+        includeSpectrogram: false,
+        probabilityThreshold: 0.75 // Adjust threshold if needed
+    });
+}
+
+function stopVoiceRecognition() {
+    if (!speechModel || !isRecognizing) return;
+    
+    speechModel.stopListening();
+    isRecognizing = false;
+    voiceFeedback.textContent = "Voice control off";
+}
+
+// Handle keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (viewerContainer.style.display === 'none') return;
+    
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        if (pageNum < totalPages) {
+            pageNum++;
+            renderPage(pageNum);
+            showCommandFeedback("Next Slide ▶️");
+        }
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        if (pageNum > 1) {
+            pageNum--;
+            renderPage(pageNum);
+            showCommandFeedback("◀️ Previous Slide");
+        }
+    } else if (e.key === 'Escape') {
+        exitPresentation();
+    } else if (e.key === 'f') {
+        toggleFullscreen();
+    }
+});

@@ -57465,7 +57465,7 @@ class WorkerMessageHandler {
   }
 }
 
-;// ./src/pdf.worker.js
+;// ./src/pdf.worker.mjs
 
 const pdfjsVersion = "5.1.91";
 const pdfjsBuild = "45cbe8bb0";

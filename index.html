@@ -6,30 +6,56 @@
     <title>Voice-Controlled Presentation Viewer</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/sound"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js"></script>
 </head>
 <body>
-    <header>
-        <h1>Welcome to the Voice-Controlled Presentation Viewer</h1>
-        <p>Upload a presentation or link your Google Slides.</p>
-    </header>
-    
-    <section>
-        <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx">
-        <button onclick="startPresentation()">Start Presentation</button>
-        <button onclick="toggleFullScreen()">Toggle Fullscreen</button>
-    </section>
-    
-    <canvas id="pdfViewer" style="width: 100%; max-height: 90vh; margin-top: 20px;"></canvas>
-    
-    <div id="slideIndicator" style="margin-top: 10px; font-size: 18px; color: #333;"></div>
-    <div id="commandIndicator" style="margin-top: 5px; font-size: 18px; color: green; transition: opacity 0.5s;"></div>
-    
-    <footer>
-        <p>Developed by Tej Prakash Carpenter</p>
-    </footer>
+    <div class="container" id="landing-container">
+        <h1>Voice-Controlled Presentation Viewer</h1>
+        <div class="upload-section">
+            <label for="presentation-file" class="file-label">
+                <span class="file-icon">📄</span>
+                <span>Choose a presentation file</span>
+                <input type="file" id="presentation-file" accept=".pdf,.ppt,.pptx" />
+            </label>
+            <p id="file-name">No file selected</p>
+        </div>
+        <div class="voice-info">
+            <h2>Voice Commands</h2>
+            <ul>
+                <li><strong>"Next"</strong> - Go to next slide</li>
+                <li><strong>"Previous"</strong> - Go to previous slide</li>
+            </ul>
+        </div>
+        <div class="buttons">
+            <button id="start-btn" disabled>Start Presentation</button>
+        </div>
+    </div>
+
+    <div class="viewer-container" id="viewer-container" style="display: none;">
+        <div class="toolbar">
+            <button id="back-btn" title="Back to upload">⬅️</button>
+            <div class="slide-info">
+                <span id="current-slide">1</span> / <span id="total-slides">1</span>
+            </div>
+            <div class="voice-status">
+                <div id="voice-indicator" class="voice-indicator">
+                    <div class="mic-icon">🎤</div>
+                    <div id="voice-feedback">Listening...</div>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="prev-slide" title="Previous Slide">◀️</button>
+                <button id="next-slide" title="Next Slide">▶️</button>
+                <button id="fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="pdf-viewer"></canvas>
+            <div id="command-feedback" class="command-feedback"></div>
+        </div>
+    </div>
 
     <script src="js/script.js"></script>
 </body>
