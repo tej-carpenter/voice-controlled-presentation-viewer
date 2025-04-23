@@ -179,23 +179,35 @@ function showCommandFeedback(message) {
 // Voice Recognition Functions
 async function loadSpeechModel() {
     try {
-        // Use absolute path instead of relative
-        const URL = window.location.origin + '/assets/audio-model/';
+        // Get the base URL of the current page
+        const baseURL = window.location.origin;
         
-        // Create recognizer using your custom model
+        // Construct absolute URLs for model files
+        const modelURL = `${baseURL}/assets/audio-model/model.json`;
+        const metadataURL = `${baseURL}/assets/audio-model/metadata.json`;
+        
+        // Log URLs for debugging
+        console.log('Loading model from:', modelURL);
+        console.log('Loading metadata from:', metadataURL);
+        
         const recognizer = await speechCommands.create(
             "BROWSER_FFT",
             undefined,
-            URL + 'model.json', 
-            URL + 'metadata.json'
+            modelURL,
+            metadataURL
         );
         
         await recognizer.ensureModelLoaded();
         speechModel = recognizer;
+        console.log("Speech model loaded successfully");
         
-        console.log("Custom speech recognition model loaded");
+        // Test if model is working
+        const labels = recognizer.wordLabels();
+        console.log("Available commands:", labels);
+        
     } catch (error) {
         console.error("Error loading speech recognition model:", error);
+        throw error; // Rethrow to see full stack trace
     }
 }
 
