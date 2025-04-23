@@ -87,6 +87,12 @@ To use a custom Teachable Machine model:
 5. Place the exported files in the `assets/audio-model/` directory
 6. Update the model URL in the `loadSpeechModel()` function in `script.js`
 
+## Customized Voice Model
+
+- Click [here](https://teachablemachine.withgoogle.com/models/uF02xfANf/) to access the custom model documentation
+- the model accepts only 'next' and 'previous' commands.
+- This model is not well trained because it was trained in a hostel room of NIT Trichy.
+
 ## License
 
 This project is released under the MIT License.
