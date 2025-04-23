@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice-Controlled Presentation Viewer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/sound"></script>
+    
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Voice-Controlled Presentation Viewer</h1>
+        <p>Upload a presentation or link your Google Slides.</p>
+    </header>
+    
+    <section>
+        <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx">
+        <button onclick="startPresentation()">Start Presentation</button>
+        <button onclick="toggleFullScreen()">Toggle Fullscreen</button>
+    </section>
+    
+    <canvas id="pdfViewer" style="width: 100%; max-height: 90vh; margin-top: 20px;"></canvas>
+    
+    <div id="slideIndicator" style="margin-top: 10px; font-size: 18px; color: #333;"></div>
+    <div id="commandIndicator" style="margin-top: 5px; font-size: 18px; color: green; transition: opacity 0.5s;"></div>
+    
+    <footer>
+        <p>Developed by Tej Prakash Carpenter</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

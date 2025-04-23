@@ -1,0 +1,73 @@
+/* Basic reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body and layout */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    text-align: center;
+    /* padding: 50px; */
+}
+
+header h1 {
+    color: #3b3b3b;
+    margin-bottom: 20px;
+}
+
+header {
+    width: 100%;
+    /* background: linear-gradient(purple,#f4f4f4); */
+    background-color: wheat;
+}
+
+section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+canvas#pdfViewer {
+    width: 90vw;
+    max-height: 90vh;
+    background-color: #e4e4e4;
+    margin: 4% 0px 4% 0px;
+}
+
+#commandIndicator {
+    margin-top: 10px;
+    font-size: 20px;
+    color: green;
+}
+
+p {
+    padding: 10px 0px 10px 0px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin:5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: #666;
+}
